@@ -45,9 +45,9 @@ namespace BVH
 		bool box_intersects_box(const Eigen::Vector3d &bbd0, const Eigen::Vector3d &bbd1, int index) const;
 
 		bool is_initialized = false;
-		void init(const std::vector<std::array<Eigen::Vector3d, 2>> &cornerlist);
 
 	public:
+		void init(const std::vector<std::array<Eigen::Vector3d, 2>> &cornerlist);
 		void init(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const double tol);
 
 		// inline void triangle_find_bbox(
@@ -86,9 +86,13 @@ namespace BVH
 		// }
 		inline void intersect_box(const Eigen::Vector3d &bbd0, const Eigen::Vector3d &bbd1, std::vector<unsigned int> &list) const
 		{
-			list.clear();
+			std::vector<unsigned int> tmp;
 			assert(n_corners >= 0);
-			box_search_recursive(bbd0, bbd1, list, 1, 0, n_corners);
+			box_search_recursive(bbd0, bbd1, tmp, 1, 0, n_corners);
+
+			list.resize(tmp.size());
+			for (int i = 0; i < tmp.size(); ++i)
+				list[i] = new2old[tmp[i]];
 		}
 	};
 } // namespace BVH

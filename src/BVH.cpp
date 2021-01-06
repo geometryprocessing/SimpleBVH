@@ -207,19 +207,29 @@ namespace BVH
 	{
 		n_corners = cornerlist.size();
 
-		boxlist.resize(
-			max_node_index(
-				1, 0, n_corners) +
-			1 // <-- this is because size == max_index + 1 !!!
-		);
+		Eigen::MatrixXd box_centers(n_corners, 3);
+		for (int i = 0; i < n_corners; ++i)
+		{
+			box_centers.row(i) = (cornerlist[i][0] + cornerlist[i][1]) / 2;
+		}
 
-		init_boxes_recursive(cornerlist, 1, 0, n_corners);
-	}
+		const Eigen::RowVector3d vmin = box_centers.colwise().minCoeff();
+		const Eigen::RowVector3d vmax = box_centers.colwise().maxCoeff();
+		const Eigen::RowVector3d center = (vmin + vmax) / 2;
+		for (int i = 0; i < n_corners; i++)
+		{
+			// make box centered at origin
+			box_centers.row(i) -= center;
+		}
 
-	void BVH::init(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const double tol)
-	{
-		assert(F.cols() == 3);
-		assert(V.cols() == 3);
+		// after placing box at origin, vmax and vmin are symetric.
+		const Eigen::Vector3d scale_point = vmax - center;
+		const double scale = scale_point.lpNorm<Eigen::Infinity>();
+		// if the box is too big, resize it
+		if (scale > 100)
+		{
+			box_centers /= scale;
+		}
 
 		struct sortstruct
 		{
@@ -228,32 +238,11 @@ namespace BVH
 		};
 		std::vector<sortstruct> list;
 		const int multi = 1000;
+		list.resize(n_corners);
 
-		const Eigen::RowVector3d vmin = V.colwise().minCoeff();
-		const Eigen::RowVector3d vmax = V.colwise().maxCoeff();
-		const Eigen::RowVector3d center = (vmin + vmax) / 2;
-		Eigen::MatrixXd v_shifted(V.rows(), V.cols());
-
-		for (int i = 0; i < V.rows(); i++)
+		for (int i = 0; i < n_corners; i++)
 		{
-			// make box centered at origin
-			v_shifted.row(i) = V.row(i) - center;
-		}
-
-		// after placing box at origin, vmax and vmin are symetric.
-		const Eigen::Vector3d scale_point = vmax - center;
-		const double scale = scale_point.lpNorm<Eigen::Infinity>();
-		// if the box is too big, resize it
-		if (scale > 300)
-		{
-			v_shifted /= scale;
-		}
-
-		list.resize(F.rows());
-
-		for (int i = 0; i < F.rows(); i++)
-		{
-			const Eigen::MatrixXd tmp = (v_shifted.row(F(i, 0)) + v_shifted.row(F(i, 1)) + v_shifted.row(F(i, 2))) * multi;
+			const Eigen::MatrixXd tmp = box_centers.row(i) * multi;
 
 			list[i].morton = Resorting::MortonCode64(int(tmp(0)), int(tmp(1)), int(tmp(2)));
 			list[i].order = i;
@@ -264,17 +253,38 @@ namespace BVH
 		};
 		std::sort(list.begin(), list.end(), morton_compare);
 
-		new2old.resize(F.rows());
-		for (int i = 0; i < F.rows(); i++)
+		new2old.resize(n_corners);
+		for (int i = 0; i < n_corners; i++)
 		{
 			new2old[i] = list[i].order;
 		}
+
+		std::vector<std::array<Eigen::Vector3d, 2>> sorted_cornerlist(n_corners);
+
+		for (int i = 0; i < n_corners; i++)
+		{
+			sorted_cornerlist[i] = cornerlist[list[i].order];
+		}
+
+		boxlist.resize(
+			max_node_index(
+				1, 0, n_corners) +
+			1 // <-- this is because size == max_index + 1 !!!
+		);
+
+		init_boxes_recursive(sorted_cornerlist, 1, 0, n_corners);
+	}
+
+	void BVH::init(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const double tol)
+	{
+		assert(F.cols() == 3);
+		assert(V.cols() == 3);
 
 		std::vector<std::array<Eigen::Vector3d, 2>> cornerlist(F.rows());
 
 		for (int i = 0; i < F.rows(); i++)
 		{
-			const Eigen::RowVector3i face = F.row(list[i].order);
+			const Eigen::RowVector3i face = F.row(i);
 			const Eigen::RowVector3d v0 = V.row(face(0));
 			const Eigen::RowVector3d v1 = V.row(face(1));
 			const Eigen::RowVector3d v2 = V.row(face(2));
