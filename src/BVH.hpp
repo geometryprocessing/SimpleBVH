@@ -7,6 +7,10 @@
 #include <cassert>
 
 namespace BVH {
+
+using VectorMax3d =
+    Eigen::Matrix<double, Eigen::Dynamic, 1, Eigen::ColMajor, 3, 1>;
+
 class BVH {
 private:
     std::vector<std::array<Eigen::Vector3d, 2>> boxlist;
@@ -41,7 +45,7 @@ public:
     void
     init(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const double tol);
 
-    inline void intersect_box(
+    inline void intersect_3D_box(
         const Eigen::Vector3d& bbd0,
         const Eigen::Vector3d& bbd1,
         std::vector<unsigned int>& list) const
@@ -53,6 +57,34 @@ public:
         list.resize(tmp.size());
         for (int i = 0; i < tmp.size(); ++i)
             list[i] = new2old[tmp[i]];
+    }
+
+    inline void intersect_box(
+        const VectorMax3d& bbd0,
+        const VectorMax3d& bbd1,
+        std::vector<unsigned int>& list) const
+    {
+        Eigen::Vector3d bbd0_3D = Eigen::Vector3d::Zero();
+        bbd0_3D.head(bbd0.size()) = bbd0.head(bbd0.size());
+
+        Eigen::Vector3d bbd1_3D = Eigen::Vector3d::Zero();
+        bbd1_3D.head(bbd1.size()) = bbd1.head(bbd1.size());
+
+        intersect_3D_box(bbd0_3D, bbd1_3D, list);
+    }
+
+    inline void intersect_2D_box(
+        const Eigen::Vector2d& bbd0,
+        const Eigen::Vector2d& bbd1,
+        std::vector<unsigned int>& list) const
+    {
+        Eigen::Vector3d bbd0_3D = Eigen::Vector3d::Zero();
+        bbd0_3D.head<2>() = bbd0;
+
+        Eigen::Vector3d bbd1_3D = Eigen::Vector3d::Zero();
+        bbd1_3D.head<2>() = bbd1;
+
+        intersect_3D_box(bbd0_3D, bbd1_3D, list);
     }
 };
 } // namespace BVH
