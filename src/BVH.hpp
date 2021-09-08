@@ -38,8 +38,6 @@ private:
         const Eigen::Vector3d& bbd1,
         int index) const;
 
-    bool is_initialized = false;
-
 public:
     void init(const std::vector<std::array<Eigen::Vector3d, 2>>& cornerlist);
     void
