@@ -126,7 +126,7 @@ jobs:
             -B build ^
             -S .
           cd build
-          ninja -j2
+          ninja -j1
 
       - name: Tests
         run: cd build; ctest --verbose
