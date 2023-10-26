@@ -2,10 +2,7 @@
 # Tests
 ################################################################################
 
-add_executable(simple_bvh_tests
-    main.cpp
-    tests.cpp
-)
+add_executable(simple_bvh_tests tests.cpp)
 
 ################################################################################
 # Required Libraries
@@ -13,11 +10,12 @@ add_executable(simple_bvh_tests
 
 target_link_libraries(simple_bvh_tests PUBLIC simple_bvh::simple_bvh)
 
+include(catch2)
+target_link_libraries(simple_bvh_tests PUBLIC Catch2::Catch2WithMain)
+
+# Extra warnings (link last for highest priority)
 include(simple_bvh_warnings)
 target_link_libraries(simple_bvh_tests PRIVATE simple_bvh::warnings)
-
-include(catch2)
-target_link_libraries(simple_bvh_tests PUBLIC Catch2::Catch2)
 
 ################################################################################
 # Compiler options
@@ -26,6 +24,10 @@ target_link_libraries(simple_bvh_tests PUBLIC Catch2::Catch2)
 ################################################################################
 # Register tests
 ################################################################################
+
+FetchContent_GetProperties(catch2)
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+include(Catch)
 
 # Register tests
 set(PARSE_CATCH_TESTS_ADD_TO_CONFIGURE_DEPENDS ON)

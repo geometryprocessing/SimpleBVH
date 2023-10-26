@@ -1,9 +1,9 @@
-#include <BVH.hpp>
-#include <Morton.hpp>
+#include "BVH.hpp"
+#include <SimpleBVH/Morton.hpp>
 
 #include <iostream>
 
-namespace BVH {
+namespace SimpleBVH {
 namespace {
     bool box_box_intersection(
         const Eigen::Vector3d& min1,
@@ -201,4 +201,4 @@ bool BVH::box_intersects_box(
 
     return box_box_intersection(bbd0, bbd1, bmin, bmax);
 }
-} // namespace BVH
+} // namespace SimpleBVH

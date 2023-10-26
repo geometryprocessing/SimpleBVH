@@ -7,7 +7,7 @@ if(TARGET simple_bvh::warnings)
     return()
 endif()
 
-set(SIMPLE_BVH_FLAGS
+set(SIMPLE_BVH_WARNING_FLAGS
     -Wall
     -Wextra
     -pedantic
@@ -147,7 +147,7 @@ set(SIMPLE_BVH_FLAGS
 
 # Flags above don't make sense for MSVC
 if(MSVC)
-    set(SIMPLE_BVH_FLAGS)
+    set(SIMPLE_BVH_WARNING_FLAGS)
 endif()
 
 include(CheckCXXCompilerFlag)
@@ -155,7 +155,7 @@ include(CheckCXXCompilerFlag)
 add_library(simple_bvh_warnings INTERFACE)
 add_library(simple_bvh::warnings ALIAS simple_bvh_warnings)
 
-foreach(FLAG IN ITEMS ${SIMPLE_BVH_FLAGS})
+foreach(FLAG IN ITEMS ${SIMPLE_BVH_WARNING_FLAGS})
     string(REPLACE "=" "-" FLAG_VAR "${FLAG}")
     if(NOT DEFINED IS_SUPPORTED_${FLAG_VAR})
         check_cxx_compiler_flag("${FLAG}" IS_SUPPORTED_${FLAG_VAR})

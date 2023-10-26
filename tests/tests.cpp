@@ -1,8 +1,5 @@
-////////////////////////////////////////////////////////////////////////////////
-#include <BVH.cpp>
-#include <Eigen/Dense>
-#include <catch2/catch.hpp>
-////////////////////////////////////////////////////////////////////////////////
+#include <SimpleBVH/BVH.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 TEST_CASE("test_tree", "[tests]")
 {
@@ -22,7 +19,7 @@ TEST_CASE("test_tree", "[tests]")
            1, 2, 3;
     // clang-format on
 
-    BVH::BVH bvh;
+    SimpleBVH::BVH bvh;
     bvh.init(pts, tri, 1e-10);
 
     std::vector<unsigned int> pairs;

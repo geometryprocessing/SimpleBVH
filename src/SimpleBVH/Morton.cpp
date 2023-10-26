@@ -5,7 +5,7 @@
 //
 // @author Nico Schertler
 
-#include <Morton.hpp>
+#include "Morton.hpp"
 #include <cassert>
 
 using namespace Resorting;
@@ -44,7 +44,7 @@ int32_t CompactBy3Bits21(uint64_t x)
     return (int32_t)d;
 }
 
-MortonCode64::MortonCode64() {}
+MortonCode64::MortonCode64() { }
 
 MortonCode64::MortonCode64(int32_t x, int32_t y, int32_t z)
 {
