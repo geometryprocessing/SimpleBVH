@@ -54,7 +54,7 @@ option(SIMPLE_BVH_BUILD_TESTS "Build unit-tests" ${SIMPLE_BVH_TOPLEVEL_PROJECT})
 
 # Set default minimum C++ standard
 if(SIMPLE_BVH_TOPLEVEL_PROJECT)
-    set(CMAKE_CXX_STANDARD 14)
+    set(CMAKE_CXX_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
     set(CMAKE_CXX_EXTENSIONS OFF)
 endif()
@@ -95,8 +95,8 @@ target_link_libraries(simple_bvh PRIVATE simple_bvh::warnings)
 # Compiler options
 ################################################################################
 
-# Use C++14
-target_compile_features(simple_bvh PUBLIC cxx_std_14)
+# Use C++17
+target_compile_features(simple_bvh PUBLIC cxx_std_17)
 
 ################################################################################
 # Tests
