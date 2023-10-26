@@ -1,32 +1,34 @@
-cmake_minimum_required(VERSION 3.1)
+################################################################################
+# Tests
 ################################################################################
 
-set(test_sources
-	main.cpp
-	tests.cpp
-)
+add_executable(simple_bvh_tests tests.cpp)
 
-ebw_download_catch2()
-add_library(catch INTERFACE)
-target_include_directories(catch SYSTEM INTERFACE ${EBW_EXTERNAL}/Catch2/single_include/catch2)
-list(APPEND CMAKE_MODULE_PATH ${EBW_EXTERNAL}/Catch2/contrib)
+################################################################################
+# Required Libraries
+################################################################################
 
+target_link_libraries(simple_bvh_tests PUBLIC simple_bvh::simple_bvh)
 
-add_executable(unit_tests ${test_sources})
+include(catch2)
+target_link_libraries(simple_bvh_tests PUBLIC Catch2::Catch2WithMain)
 
-foreach(source IN ITEMS ${test_sources})
-    source_group("tests" FILES "${source}")
-endforeach()
+# Extra warnings (link last for highest priority)
+include(simple_bvh_warnings)
+target_link_libraries(simple_bvh_tests PRIVATE simple_bvh::warnings)
 
-target_link_libraries(unit_tests PUBLIC BVH_lib catch)
+################################################################################
+# Compiler options
+################################################################################
 
-set(EBW_ROOT     "${CMAKE_CURRENT_LIST_DIR}/..")
-set(DATA_DIR "${CMAKE_CURRENT_LIST_DIR}/data/")
-target_compile_definitions(unit_tests PUBLIC -DEBW_DATA_DIR=\"${DATA_DIR}\")
+################################################################################
+# Register tests
+################################################################################
 
-
+FetchContent_GetProperties(catch2)
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+include(Catch)
 
 # Register tests
 set(PARSE_CATCH_TESTS_ADD_TO_CONFIGURE_DEPENDS ON)
-include(Catch)
-catch_discover_tests(unit_tests)
+catch_discover_tests(simple_bvh_tests)
