@@ -20,6 +20,12 @@ void point_segment_squared_distance(
     VectorMax3d& closest_point,
     double& dist);
 
+void point_triangle_squared_distance(
+    const VectorMax3d& point,
+    const std::array<VectorMax3d, 3>& f,
+    VectorMax3d& closest_point,
+    double& dist);
+
 class BVH {
 public:
     void init(const std::vector<std::array<VectorMax3d, 2>>& cornerlist);
@@ -124,5 +130,8 @@ private:
     size_t n_corners = -1;
     LeafCallback leafCallback;
     GetPointCallback getPoint;
+
+    Eigen::MatrixXd vertices;
+    Eigen::MatrixXi faces;
 };
 } // namespace SimpleBVH

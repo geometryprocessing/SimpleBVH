@@ -58,12 +58,6 @@ TEST_CASE("test_distance", "[tests]")
     VectorMax3d nearest_point;
     double sq_dist;
     bvh.init(pts, edges, 1e-10);
-    bvh.set_leaf_distance_callback([&](const VectorMax3d& p, int f,
-                                       VectorMax3d& cp, double& dist) {
-        point_segment_squared_distance(
-            p, { { pts.row(edges(f, 0)), pts.row(edges(f, 1)) } }, cp, dist);
-    });
-    bvh.set_get_point_callback([&](int f) { return pts.row(edges(f, 0)); });
     bvh.nearest_facet(Eigen::Vector3d(-1, -1, -1), nearest_point, sq_dist);
 
     CHECK(pts.row(0) == nearest_point.transpose());
@@ -94,12 +88,6 @@ TEST_CASE("test_distance_2d", "[tests]")
     VectorMax3d nearest_point;
     double sq_dist;
     bvh.init(pts, edges, 1e-10);
-    bvh.set_leaf_distance_callback([&](const VectorMax3d& p, int f,
-                                       VectorMax3d& cp, double& dist) {
-        point_segment_squared_distance(
-            p, { { pts.row(edges(f, 0)), pts.row(edges(f, 1)) } }, cp, dist);
-    });
-    bvh.set_get_point_callback([&](int f) { return pts.row(edges(f, 0)); });
     bvh.nearest_facet(Eigen::Vector2d(-1, -1), nearest_point, sq_dist);
 
     CHECK(pts.row(0) == nearest_point.transpose());

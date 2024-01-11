@@ -25,6 +25,92 @@ void point_segment_squared_distance(
     dist = (point - closest_point).squaredNorm();
 }
 
+void point_triangle_squared_distance(
+    const VectorMax3d& x,
+    const std::array<VectorMax3d, 3>& f,
+    VectorMax3d& pt,
+    double& dist)
+{
+    const VectorMax3d& pa = f[0];
+    const VectorMax3d& pb = f[1];
+    const VectorMax3d& pc = f[2];
+
+    // source: real time collision detection
+    // check if x in vertex region outside pa
+    VectorMax3d ab = pb - pa;
+    VectorMax3d ac = pc - pa;
+    VectorMax3d ax = x - pa;
+    const double d1 = ab.dot(ax);
+    const double d2 = ac.dot(ax);
+    if (d1 <= 0 && d2 <= 0) {
+        // barycentric coordinates (1, 0, 0)
+        pt = pa;
+        dist = (x - pt).norm();
+        return;
+    }
+
+    // check if x in vertex region outside pb
+    VectorMax3d bx = x - pb;
+    const double d3 = ab.dot(bx);
+    const double d4 = ac.dot(bx);
+    if (d3 >= 0.0f && d4 <= d3) {
+        // barycentric coordinates (0, 1, 0)
+        pt = pb;
+        dist = (x - pt).norm();
+        return;
+    }
+
+    // check if x in vertex region outside pc
+    VectorMax3d cx = x - pc;
+    const double d5 = ab.dot(cx);
+    const double d6 = ac.dot(cx);
+    if (d6 >= 0.0f && d5 <= d6) {
+        // barycentric coordinates (0, 0, 1)
+        pt = pc;
+        dist = (x - pt).norm();
+        return;
+    }
+
+    // check if x in edge region of ab, if so return projection of x onto ab
+    const double vc = d1 * d4 - d3 * d2;
+    if (vc <= 0.0f && d1 >= 0.0f && d3 <= 0.0f) {
+        // barycentric coordinates (1 - v, v, 0)
+        const double v = d1 / (d1 - d3);
+        pt = pa + ab * v;
+        dist = (x - pt).norm();
+        return;
+    }
+
+    // check if x in edge region of ac, if so return projection of x onto ac
+    const double vb = d5 * d2 - d1 * d6;
+    if (vb <= 0.0f && d2 >= 0.0f && d6 <= 0.0f) {
+        // barycentric coordinates (1 - w, 0, w)
+        const double w = d2 / (d2 - d6);
+        pt = pa + ac * w;
+        dist = (x - pt).norm();
+        return;
+    }
+
+    // check if x in edge region of bc, if so return projection of x onto bc
+    const double va = d3 * d6 - d5 * d4;
+    if (va <= 0.0f && (d4 - d3) >= 0.0f && (d5 - d6) >= 0.0f) {
+        // barycentric coordinates (0, 1 - w, w)
+        const double w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+        pt = pb + (pc - pb) * w;
+        dist = (x - pt).norm();
+        return;
+    }
+
+    // x inside face region. Compute pt through its barycentric coordinates (u,
+    // v, w)
+    const double denom = 1 / (va + vb + vc);
+    const double v = vb * denom;
+    const double w = vc * denom;
+
+    pt = pa + ab * v + ac * w; //= u*a + v*b + w*c, u = va*denom = 1.0f - v - w
+    dist = (x - pt).norm();
+}
+
 namespace {
     bool box_box_intersection(
         const VectorMax3d& min1,
@@ -245,6 +331,9 @@ void BVH::init(
     assert(F.cols() == 3 || F.cols() == 2);
     assert(V.cols() == 3 || V.cols() == 2);
 
+    vertices = V;
+    faces = F;
+
     std::vector<std::array<VectorMax3d, 2>> cornerlist(F.rows());
     if (F.cols() == 3) {
         for (int i = 0; i < F.rows(); i++) {
@@ -264,6 +353,18 @@ void BVH::init(
             cornerlist[i][0] = min.transpose();
             cornerlist[i][1] = max.transpose();
         }
+
+        set_leaf_distance_callback(
+            [&](const VectorMax3d& p, int f, VectorMax3d& cp, double& dist) {
+                point_triangle_squared_distance(
+                    p,
+                    { { vertices.row(faces(f, 0)), vertices.row(faces(f, 1)),
+                        vertices.row(faces(f, 2)) } },
+                    cp, dist);
+            });
+        set_get_point_callback(
+            [&](int f) { return vertices.row(faces(f, 0)); });
+
     } else if (F.cols() == 2) {
         for (int i = 0; i < F.rows(); i++) {
             const Eigen::RowVector2i face = F.row(i);
@@ -280,6 +381,15 @@ void BVH::init(
             cornerlist[i][0] = min.transpose();
             cornerlist[i][1] = max.transpose();
         }
+
+        set_leaf_distance_callback([&](const VectorMax3d& p, int f,
+                                       VectorMax3d& cp, double& dist) {
+            point_segment_squared_distance(
+                p, { { vertices.row(faces(f, 0)), vertices.row(faces(f, 1)) } },
+                cp, dist);
+        });
+        set_get_point_callback(
+            [&](int f) { return vertices.row(faces(f, 0)); });
     }
 
     init(cornerlist);
