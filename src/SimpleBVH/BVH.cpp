@@ -11,7 +11,7 @@ void point_segment_squared_distance(
     VectorMax3d& closest_point,
     double& dist)
 {
-    const double l2 = (f[0] - f[1]).norm();
+    const double l2 = (f[0] - f[1]).squaredNorm();
     const double t = (point - f[0]).dot(f[1] - f[0]);
     if (t <= 0.0 || l2 == 0.0) {
         closest_point = f[0];
@@ -45,7 +45,7 @@ void point_triangle_squared_distance(
     if (d1 <= 0 && d2 <= 0) {
         // barycentric coordinates (1, 0, 0)
         pt = pa;
-        dist = (x - pt).norm();
+        dist = (x - pt).squaredNorm();
         return;
     }
 
@@ -56,7 +56,7 @@ void point_triangle_squared_distance(
     if (d3 >= 0.0f && d4 <= d3) {
         // barycentric coordinates (0, 1, 0)
         pt = pb;
-        dist = (x - pt).norm();
+        dist = (x - pt).squaredNorm();
         return;
     }
 
@@ -67,7 +67,7 @@ void point_triangle_squared_distance(
     if (d6 >= 0.0f && d5 <= d6) {
         // barycentric coordinates (0, 0, 1)
         pt = pc;
-        dist = (x - pt).norm();
+        dist = (x - pt).squaredNorm();
         return;
     }
 
@@ -77,7 +77,7 @@ void point_triangle_squared_distance(
         // barycentric coordinates (1 - v, v, 0)
         const double v = d1 / (d1 - d3);
         pt = pa + ab * v;
-        dist = (x - pt).norm();
+        dist = (x - pt).squaredNorm();
         return;
     }
 
@@ -87,7 +87,7 @@ void point_triangle_squared_distance(
         // barycentric coordinates (1 - w, 0, w)
         const double w = d2 / (d2 - d6);
         pt = pa + ac * w;
-        dist = (x - pt).norm();
+        dist = (x - pt).squaredNorm();
         return;
     }
 
@@ -97,7 +97,7 @@ void point_triangle_squared_distance(
         // barycentric coordinates (0, 1 - w, w)
         const double w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
         pt = pb + (pc - pb) * w;
-        dist = (x - pt).norm();
+        dist = (x - pt).squaredNorm();
         return;
     }
 
@@ -108,7 +108,7 @@ void point_triangle_squared_distance(
     const double w = vc * denom;
 
     pt = pa + ab * v + ac * w; //= u*a + v*b + w*c, u = va*denom = 1.0f - v - w
-    dist = (x - pt).norm();
+    dist = (x - pt).squaredNorm();
 }
 
 namespace {
@@ -136,7 +136,7 @@ namespace {
     double point_box_center_squared_distance(
         const VectorMax3d& p, const std::array<VectorMax3d, 2>& B)
     {
-        return (p - (B[0] + B[1]) / 2).norm();
+        return (p - (B[0] + B[1]) / 2).squaredNorm();
     }
 
     double inner_point_box_squared_distance(
@@ -428,8 +428,8 @@ void BVH::get_nearest_facet_hint(
     }
     nearest_f = b;
 
-    nearest_point = getPoint(nearest_f);
-    sq_dist = (p - nearest_point).norm();
+    nearest_point = getPoint(new2old[nearest_f]);
+    sq_dist = (p - nearest_point).squaredNorm();
 }
 
 void BVH::nearest_facet_recursive(
