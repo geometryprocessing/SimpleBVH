@@ -127,7 +127,7 @@ private:
 
     std::vector<std::array<VectorMax3d, 2>> boxlist;
     std::vector<int> new2old;
-    size_t n_corners = -1;
+    long n_corners = -1;
     LeafCallback leafCallback;
     GetPointCallback getPoint;
 
