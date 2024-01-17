@@ -201,7 +201,7 @@ void BVH::init_boxes_recursive(
 
     assert(childl < boxlist.size());
     assert(childr < boxlist.size());
-    for (int c = 0; c < cornerlist[0].size(); ++c) {
+    for (int c = 0; c < cornerlist[0][0].size(); ++c) {
         boxlist[node_index][0][c] =
             std::min(boxlist[childl][0][c], boxlist[childr][0][c]);
         boxlist[node_index][1][c] =
@@ -354,17 +354,6 @@ void BVH::init(
             cornerlist[i][1] = max.transpose();
         }
 
-        set_leaf_distance_callback(
-            [&](const VectorMax3d& p, int f, VectorMax3d& cp, double& dist) {
-                point_triangle_squared_distance(
-                    p,
-                    { { vertices.row(faces(f, 0)), vertices.row(faces(f, 1)),
-                        vertices.row(faces(f, 2)) } },
-                    cp, dist);
-            });
-        set_get_point_callback(
-            [&](int f) { return vertices.row(faces(f, 0)); });
-
     } else if (F.cols() == 2) {
         for (int i = 0; i < F.rows(); i++) {
             const Eigen::RowVector2i face = F.row(i);
@@ -381,15 +370,6 @@ void BVH::init(
             cornerlist[i][0] = min.transpose();
             cornerlist[i][1] = max.transpose();
         }
-
-        set_leaf_distance_callback([&](const VectorMax3d& p, int f,
-                                       VectorMax3d& cp, double& dist) {
-            point_segment_squared_distance(
-                p, { { vertices.row(faces(f, 0)), vertices.row(faces(f, 1)) } },
-                cp, dist);
-        });
-        set_get_point_callback(
-            [&](int f) { return vertices.row(faces(f, 0)); });
     }
 
     init(cornerlist);
@@ -428,7 +408,7 @@ void BVH::get_nearest_facet_hint(
     }
     nearest_f = b;
 
-    nearest_point = getPoint(new2old[nearest_f]);
+    nearest_point = point_callback(new2old[nearest_f]);
     sq_dist = (p - nearest_point).squaredNorm();
 }
 
@@ -448,7 +428,7 @@ void BVH::nearest_facet_recursive(
     if (b + 1 == e) {
         VectorMax3d cur_nearest_point;
         double cur_sq_dist;
-        leafCallback(p, new2old[b], cur_nearest_point, cur_sq_dist);
+        leaf_callback(p, new2old[b], cur_nearest_point, cur_sq_dist);
         if (cur_sq_dist < sq_dist) {
             nearest_f = b;
             nearest_point = cur_nearest_point;
@@ -487,5 +467,43 @@ void BVH::nearest_facet_recursive(
                 p, nearest_f, nearest_point, sq_dist, childl, b, m);
         }
     }
+}
+
+void BVH::leaf_callback(
+    const VectorMax3d& p, int f, VectorMax3d& np, double& sq_d) const
+{
+    if (leafCallback) {
+        leafCallback(p, f, np, sq_d);
+        return;
+    }
+
+    if (faces.cols() == 2) {
+        point_segment_squared_distance(
+            p, { { vertices.row(faces(f, 0)), vertices.row(faces(f, 1)) } }, np,
+            sq_d);
+        return;
+    } else if (faces.cols() == 3) {
+        point_triangle_squared_distance(
+            p,
+            { { vertices.row(faces(f, 0)), vertices.row(faces(f, 1)),
+                vertices.row(faces(f, 2)) } },
+            np, sq_d);
+        return;
+    }
+
+    assert(false);
+}
+VectorMax3d BVH::point_callback(int f) const
+{
+    if (getPoint) {
+        return getPoint(f);
+    }
+
+    if (faces.cols() == 2 || faces.cols() == 3) {
+        return vertices.row(faces(f, 0));
+    }
+
+    assert(false);
+    return VectorMax3d(3);
 }
 } // namespace SimpleBVH

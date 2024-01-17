@@ -125,6 +125,10 @@ private:
 
     static int max_node_index(int node_index, int b, int e);
 
+    void leaf_callback(
+        const VectorMax3d& p, int f, VectorMax3d& np, double& sq_d) const;
+    VectorMax3d point_callback(int f) const;
+
     std::vector<std::array<VectorMax3d, 2>> boxlist;
     std::vector<int> new2old;
     long n_corners = -1;
