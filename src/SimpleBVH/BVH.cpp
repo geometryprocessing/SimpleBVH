@@ -469,6 +469,68 @@ void BVH::nearest_facet_recursive(
     }
 }
 
+void BVH::facet_in_envelope_recursive(
+    const VectorMax3d& p,
+    double sq_epsilon,
+    int& nearest_f,
+    VectorMax3d& nearest_point,
+    double& sq_dist,
+    int n,
+    int b,
+    int e) const
+{
+    assert(e > b);
+
+    if (sq_dist <= sq_epsilon) {
+        return;
+    }
+
+    // If node is a leaf: compute point-facet distance
+    // and replace current if nearer
+    if (b + 1 == e) {
+        VectorMax3d cur_nearest_point;
+        double cur_sq_dist;
+        leaf_callback(p, new2old[b], cur_nearest_point, cur_sq_dist);
+        if (cur_sq_dist < sq_dist) {
+            nearest_f = b;
+            nearest_point = cur_nearest_point;
+            sq_dist = cur_sq_dist;
+        }
+        return;
+    }
+    int m = b + (e - b) / 2;
+    int childl = 2 * n;
+    int childr = 2 * n + 1;
+
+    assert(childl < boxlist.size());
+    assert(childr < boxlist.size());
+
+    double dl = point_box_signed_squared_distance(p, boxlist[childl]);
+    double dr = point_box_signed_squared_distance(p, boxlist[childr]);
+
+    // Traverse the "nearest" child first, so that it has more chances
+    // to prune the traversal of the other child.
+    if (dl < dr) {
+        if (dl < sq_dist && dl <= sq_epsilon) {
+            facet_in_envelope_recursive(
+                p, sq_epsilon, nearest_f, nearest_point, sq_dist, childl, b, m);
+        }
+        if (dr < sq_dist && dr <= sq_epsilon) {
+            facet_in_envelope_recursive(
+                p, sq_epsilon, nearest_f, nearest_point, sq_dist, childr, m, e);
+        }
+    } else {
+        if (dr < sq_dist && dr <= sq_epsilon) {
+            facet_in_envelope_recursive(
+                p, sq_epsilon, nearest_f, nearest_point, sq_dist, childr, m, e);
+        }
+        if (dl < sq_dist && dl <= sq_epsilon) {
+            facet_in_envelope_recursive(
+                p, sq_epsilon, nearest_f, nearest_point, sq_dist, childl, b, m);
+        }
+    }
+}
+
 void BVH::leaf_callback(
     const VectorMax3d& p, int f, VectorMax3d& np, double& sq_d) const
 {

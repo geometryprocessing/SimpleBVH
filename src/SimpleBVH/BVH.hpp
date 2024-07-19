@@ -80,6 +80,35 @@ public:
             p, nearest_facet, nearest_point, sq_dist, 1, 0, n_corners);
     }
 
+    int facet_in_envelope(
+        const VectorMax3d& p,
+        double sq_epsilon,
+        VectorMax3d& nearest_point,
+        double& sq_dist) const
+    {
+        int nearest_facet;
+        get_nearest_facet_hint(p, nearest_facet, nearest_point, sq_dist);
+        facet_in_envelope_recursive(
+            p, sq_epsilon, nearest_facet, nearest_point, sq_dist, 1, 0,
+            n_corners);
+        return nearest_facet;
+    }
+
+    void facet_in_envelope_with_hint(
+        const VectorMax3d& p,
+        double sq_epsilon,
+        int& nearest_facet,
+        VectorMax3d& nearest_point,
+        double& sq_dist) const
+    {
+        if (nearest_facet < 0) {
+            get_nearest_facet_hint(p, nearest_facet, nearest_point, sq_dist);
+        }
+        facet_in_envelope_recursive(
+            p, sq_epsilon, nearest_facet, nearest_point, sq_dist, 1, 0,
+            n_corners);
+    }
+
     void set_leaf_distance_callback(const LeafCallback& callback)
     {
         leafCallback = callback;
@@ -113,6 +142,16 @@ private:
 
     void nearest_facet_recursive(
         const VectorMax3d& p,
+        int& nearest_f,
+        VectorMax3d& nearest_point,
+        double& sq_dist,
+        int n,
+        int b,
+        int e) const;
+
+    void facet_in_envelope_recursive(
+        const VectorMax3d& p,
+        double sq_epsilon,
         int& nearest_f,
         VectorMax3d& nearest_point,
         double& sq_dist,
