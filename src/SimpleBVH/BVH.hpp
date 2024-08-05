@@ -104,6 +104,7 @@ public:
         if (nearest_facet < 0) {
             get_nearest_facet_hint(p, nearest_facet, nearest_point, sq_dist);
         }
+
         facet_in_envelope_recursive(
             p, sq_epsilon, nearest_facet, nearest_point, sq_dist, 1, 0,
             n_corners);
@@ -117,6 +118,29 @@ public:
     void set_get_point_callback(const GetPointCallback& callback)
     {
         getPoint = callback;
+    }
+
+    inline void point_facet_distance(
+        const VectorMax3d& p,
+        const int facet,
+        VectorMax3d& closest_point,
+        double& sq_d) const
+    {
+        const int f = new2old[facet];
+
+        if (faces.cols() == 2) {
+            point_segment_squared_distance(
+                p, { { vertices.row(faces(f, 0)), vertices.row(faces(f, 1)) } },
+                closest_point, sq_d);
+            return;
+        } else if (faces.cols() == 3) {
+            point_triangle_squared_distance(
+                p,
+                { { vertices.row(faces(f, 0)), vertices.row(faces(f, 1)),
+                    vertices.row(faces(f, 2)) } },
+                closest_point, sq_d);
+            return;
+        }
     }
 
 private:
