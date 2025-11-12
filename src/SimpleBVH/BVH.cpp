@@ -6,40 +6,39 @@
 namespace SimpleBVH {
 
 void point_segment_squared_distance(
-    const VectorMax3d& point,
-    const std::array<VectorMax3d, 2>& f,
-    VectorMax3d& closest_point,
+    const Vector3d& point,
+    const Vector3d& pa,
+    const Vector3d& pb,
+    Vector3d& closest_point,
     double& dist)
 {
-    const double l2 = (f[0] - f[1]).squaredNorm();
-    const double t = (point - f[0]).dot(f[1] - f[0]);
+    const double l2 = (pa - pb).squaredNorm();
+    const double t = (point - pa).dot(pb - pa);
     if (t <= 0.0 || l2 == 0.0) {
-        closest_point = f[0];
+        closest_point = pa;
     } else if (t > l2) {
-        closest_point = f[1];
+        closest_point = pb;
     } else {
         const double lambda1 = t / l2;
         const double lambda0 = 1.0 - lambda1;
-        closest_point = lambda0 * f[0] + lambda1 * f[1];
+        closest_point = lambda0 * pa + lambda1 * pb;
     }
     dist = (point - closest_point).squaredNorm();
 }
 
 void point_triangle_squared_distance(
-    const VectorMax3d& x,
-    const std::array<VectorMax3d, 3>& f,
-    VectorMax3d& pt,
+    const Vector3d& x,
+    const Vector3d& pa,
+    const Vector3d& pb,
+    const Vector3d& pc,
+    Vector3d& pt,
     double& dist)
 {
-    const VectorMax3d& pa = f[0];
-    const VectorMax3d& pb = f[1];
-    const VectorMax3d& pc = f[2];
-
     // source: real time collision detection
     // check if x in vertex region outside pa
-    VectorMax3d ab = pb - pa;
-    VectorMax3d ac = pc - pa;
-    VectorMax3d ax = x - pa;
+    Vector3d ab = pb - pa;
+    Vector3d ac = pc - pa;
+    Vector3d ax = x - pa;
     const double d1 = ab.dot(ax);
     const double d2 = ac.dot(ax);
     if (d1 <= 0 && d2 <= 0) {
@@ -50,7 +49,7 @@ void point_triangle_squared_distance(
     }
 
     // check if x in vertex region outside pb
-    VectorMax3d bx = x - pb;
+    Vector3d bx = x - pb;
     const double d3 = ab.dot(bx);
     const double d4 = ac.dot(bx);
     if (d3 >= 0.0f && d4 <= d3) {
@@ -61,7 +60,7 @@ void point_triangle_squared_distance(
     }
 
     // check if x in vertex region outside pc
-    VectorMax3d cx = x - pc;
+    Vector3d cx = x - pc;
     const double d5 = ab.dot(cx);
     const double d6 = ac.dot(cx);
     if (d6 >= 0.0f && d5 <= d6) {
@@ -113,10 +112,10 @@ void point_triangle_squared_distance(
 
 namespace {
     bool box_box_intersection(
-        const VectorMax3d& min1,
-        const VectorMax3d& max1,
-        const VectorMax3d& min2,
-        const VectorMax3d& max2)
+        const Vector3d& min1,
+        const Vector3d& max1,
+        const Vector3d& min2,
+        const Vector3d& max2)
     {
         if (min1.size() == 3) {
             if (max1[0] < min2[0] || max1[1] < min2[1] || max1[2] < min2[2])
@@ -134,27 +133,27 @@ namespace {
     }
 
     double point_box_center_squared_distance(
-        const VectorMax3d& p, const std::array<VectorMax3d, 2>& B)
+        const Vector3d& p, const std::array<Vector3d, 2>& B)
     {
         return (p - (B[0] + B[1]) / 2).squaredNorm();
     }
 
     double inner_point_box_squared_distance(
-        const VectorMax3d& p, const std::array<VectorMax3d, 2>& B)
+        const Vector3d& p, const std::array<Vector3d, 2>& B)
     {
         assert(p.size() == B[0].size());
 
-        double result = std::pow(p[0] - B[0][0], 2);
-        result = std::min(result, std::pow(p[0] - B[1][0], 2));
+        double result = (p[0] - B[0][0]) * (p[0] - B[0][0]);
+        result = std::min(result, (p[0] - B[1][0]) * (p[0] - B[1][0]));
         for (int c = 1; c < p.size(); ++c) {
-            result = std::min(result, std::pow(p[c] - B[0][c], 2));
-            result = std::min(result, std::pow(p[c] - B[1][c], 2));
+            result = std::min(result, (p[c] - B[0][c]) * (p[c] - B[0][c]));
+            result = std::min(result, (p[c] - B[1][c]) * (p[c] - B[1][c]));
         }
         return result;
     }
 
     double point_box_signed_squared_distance(
-        const VectorMax3d& p, const std::array<VectorMax3d, 2>& B)
+        const Vector3d& p, const std::array<Vector3d, 2>& B)
     {
         assert(p.size() == B[0].size());
 
@@ -163,10 +162,10 @@ namespace {
         for (int c = 0; c < p.size(); c++) {
             if (p[c] < B[0][c]) {
                 inside = false;
-                result += std::pow(p[c] - B[0][c], 2);
+                result += (p[c] - B[0][c]) * (p[c] - B[0][c]);
             } else if (p[c] > B[1][c]) {
                 inside = false;
-                result += std::pow(p[c] - B[1][c], 2);
+                result += (p[c] - B[1][c]) * (p[c] - B[1][c]);
             }
         }
         if (inside) {
@@ -177,7 +176,7 @@ namespace {
 } // namespace
 
 void BVH::init_boxes_recursive(
-    const std::vector<std::array<VectorMax3d, 2>>& cornerlist,
+    const std::vector<std::array<Vector3d, 2>>& cornerlist,
     int node_index,
     int b,
     int e)
@@ -210,8 +209,8 @@ void BVH::init_boxes_recursive(
 }
 
 void BVH::box_search_recursive(
-    const VectorMax3d& bbd0,
-    const VectorMax3d& bbd1,
+    const Vector3d& bbd0,
+    const Vector3d& bbd1,
     std::vector<unsigned int>& list,
     int n,
     int b,
@@ -256,7 +255,7 @@ int BVH::max_node_index(int node_index, int b, int e)
     return std::max(max_node_index(childl, b, m), max_node_index(childr, m, e));
 }
 
-void BVH::init(const std::vector<std::array<VectorMax3d, 2>>& cornerlist)
+void BVH::init(const std::vector<std::array<Vector3d, 2>>& cornerlist)
 {
     n_corners = cornerlist.size();
 
@@ -265,16 +264,16 @@ void BVH::init(const std::vector<std::array<VectorMax3d, 2>>& cornerlist)
         box_centers.row(i) = (cornerlist[i][0] + cornerlist[i][1]) / 2;
     }
 
-    const VectorMax3d vmin = box_centers.colwise().minCoeff();
-    const VectorMax3d vmax = box_centers.colwise().maxCoeff();
-    const VectorMax3d center = (vmin + vmax) / 2;
+    const Vector3d vmin = box_centers.colwise().minCoeff();
+    const Vector3d vmax = box_centers.colwise().maxCoeff();
+    const Vector3d center = (vmin + vmax) / 2;
     for (int i = 0; i < n_corners; i++) {
         // make box centered at origin
         box_centers.row(i) -= center;
     }
 
     // after placing box at origin, vmax and vmin are symetric.
-    const VectorMax3d scale_point = vmax - center;
+    const Vector3d scale_point = vmax - center;
     const double scale = scale_point.lpNorm<Eigen::Infinity>();
     // if the box is too big, resize it
     if (scale > 100) {
@@ -307,7 +306,7 @@ void BVH::init(const std::vector<std::array<VectorMax3d, 2>>& cornerlist)
         new2old[i] = list[i].order;
     }
 
-    std::vector<std::array<VectorMax3d, 2>> sorted_cornerlist(n_corners);
+    std::vector<std::array<Vector3d, 2>> sorted_cornerlist(n_corners);
 
     for (int i = 0; i < n_corners; i++) {
         sorted_cornerlist[i] = cornerlist[list[i].order];
@@ -331,24 +330,30 @@ void BVH::init(
     assert(F.cols() == 3 || F.cols() == 2);
     assert(V.cols() == 3 || V.cols() == 2);
 
-    vertices = V;
+    if (V.cols() == 3) {
+        vertices = V;
+    } else {
+        vertices.resize(V.rows(), 3);
+        vertices.setZero();
+        vertices.block(0, 0, V.rows(), V.cols()) = V;
+    }
     faces = F;
 
-    std::vector<std::array<VectorMax3d, 2>> cornerlist(F.rows());
+    std::vector<std::array<Vector3d, 2>> cornerlist(F.rows());
     if (F.cols() == 3) {
         for (int i = 0; i < F.rows(); i++) {
             const Eigen::RowVector3i face = F.row(i);
-            const VectorMax3d v0 = V.row(face(0));
-            const VectorMax3d v1 = V.row(face(1));
-            const VectorMax3d v2 = V.row(face(2));
+            const Vector3d v0 = V.row(face(0));
+            const Vector3d v1 = V.row(face(1));
+            const Vector3d v2 = V.row(face(2));
 
             Eigen::MatrixXd tmp(3, v0.size());
             tmp.row(0) = v0.transpose();
             tmp.row(1) = v1.transpose();
             tmp.row(2) = v2.transpose();
 
-            const VectorMax3d min = tmp.colwise().minCoeff().array() - tol;
-            const VectorMax3d max = tmp.colwise().maxCoeff().array() + tol;
+            const Vector3d min = tmp.colwise().minCoeff().array() - tol;
+            const Vector3d max = tmp.colwise().maxCoeff().array() + tol;
 
             cornerlist[i][0] = min.transpose();
             cornerlist[i][1] = max.transpose();
@@ -357,15 +362,15 @@ void BVH::init(
     } else if (F.cols() == 2) {
         for (int i = 0; i < F.rows(); i++) {
             const Eigen::RowVector2i face = F.row(i);
-            const VectorMax3d v0 = V.row(face(0));
-            const VectorMax3d v1 = V.row(face(1));
+            const Vector3d v0 = vertices.row(face(0));
+            const Vector3d v1 = vertices.row(face(1));
 
             Eigen::MatrixXd tmp(2, v0.size());
             tmp.row(0) = v0.transpose();
             tmp.row(1) = v1.transpose();
 
-            const VectorMax3d min = tmp.colwise().minCoeff().array() - tol;
-            const VectorMax3d max = tmp.colwise().maxCoeff().array() + tol;
+            const Vector3d min = tmp.colwise().minCoeff().array() - tol;
+            const Vector3d max = tmp.colwise().maxCoeff().array() + tol;
 
             cornerlist[i][0] = min.transpose();
             cornerlist[i][1] = max.transpose();
@@ -376,7 +381,7 @@ void BVH::init(
 }
 
 bool BVH::box_intersects_box(
-    const VectorMax3d& bbd0, const VectorMax3d& bbd1, int index) const
+    const Vector3d& bbd0, const Vector3d& bbd1, int index) const
 {
     const auto& bmin = boxlist[index][0];
     const auto& bmax = boxlist[index][1];
@@ -385,9 +390,9 @@ bool BVH::box_intersects_box(
 }
 
 void BVH::get_nearest_facet_hint(
-    const VectorMax3d& p,
+    const Vector3d& p,
     int& nearest_f,
-    VectorMax3d& nearest_point,
+    Vector3d& nearest_point,
     double& sq_dist) const
 {
     int b = 0;
@@ -413,9 +418,9 @@ void BVH::get_nearest_facet_hint(
 }
 
 void BVH::nearest_facet_recursive(
-    const VectorMax3d& p,
+    const Vector3d& p,
     int& nearest_f,
-    VectorMax3d& nearest_point,
+    Vector3d& nearest_point,
     double& sq_dist,
     int n,
     int b,
@@ -426,7 +431,7 @@ void BVH::nearest_facet_recursive(
     // If node is a leaf: compute point-facet distance
     // and replace current if nearer
     if (b + 1 == e) {
-        VectorMax3d cur_nearest_point;
+        Vector3d cur_nearest_point;
         double cur_sq_dist;
         leaf_callback(p, new2old[b], cur_nearest_point, cur_sq_dist);
         if (cur_sq_dist < sq_dist) {
@@ -470,10 +475,10 @@ void BVH::nearest_facet_recursive(
 }
 
 void BVH::facet_in_envelope_recursive(
-    const VectorMax3d& p,
+    const Vector3d& p,
     double sq_epsilon,
     int& nearest_f,
-    VectorMax3d& nearest_point,
+    Vector3d& nearest_point,
     double& sq_dist,
     int n,
     int b,
@@ -488,7 +493,7 @@ void BVH::facet_in_envelope_recursive(
     // If node is a leaf: compute point-facet distance
     // and replace current if nearer
     if (b + 1 == e) {
-        VectorMax3d cur_nearest_point;
+        Vector3d cur_nearest_point;
         double cur_sq_dist;
         leaf_callback(p, new2old[b], cur_nearest_point, cur_sq_dist);
         if (cur_sq_dist < sq_dist) {
@@ -532,7 +537,7 @@ void BVH::facet_in_envelope_recursive(
 }
 
 void BVH::leaf_callback(
-    const VectorMax3d& p, int f, VectorMax3d& np, double& sq_d) const
+    const Vector3d& p, int f, Vector3d& np, double& sq_d) const
 {
     if (leafCallback) {
         leafCallback(p, f, np, sq_d);
@@ -541,21 +546,23 @@ void BVH::leaf_callback(
 
     if (faces.cols() == 2) {
         point_segment_squared_distance(
-            p, { { vertices.row(faces(f, 0)), vertices.row(faces(f, 1)) } }, np,
-            sq_d);
+            p, vertices.row(faces(f, 0)), vertices.row(faces(f, 1)), np, sq_d);
         return;
     } else if (faces.cols() == 3) {
+        // point_triangle_squared_distance(
+        //     p,
+        //     { { vertices.row(faces(f, 0)), vertices.row(faces(f, 1)),
+        //         vertices.row(faces(f, 2)) } },
+        //     np, sq_d);
         point_triangle_squared_distance(
-            p,
-            { { vertices.row(faces(f, 0)), vertices.row(faces(f, 1)),
-                vertices.row(faces(f, 2)) } },
-            np, sq_d);
+            p, vertices.row(faces(f, 0)), vertices.row(faces(f, 1)),
+            vertices.row(faces(f, 2)), np, sq_d);
         return;
     }
 
     assert(false);
 }
-VectorMax3d BVH::point_callback(int f) const
+Vector3d BVH::point_callback(int f) const
 {
     if (getPoint) {
         return getPoint(f);
@@ -566,6 +573,6 @@ VectorMax3d BVH::point_callback(int f) const
     }
 
     assert(false);
-    return VectorMax3d(3);
+    return Vector3d(3);
 }
 } // namespace SimpleBVH

@@ -57,7 +57,7 @@ TEST_CASE("test_distance", "[tests]")
     // clang-format on
 
     SimpleBVH::BVH bvh;
-    VectorMax3d nearest_point;
+    Vector3d nearest_point;
     double sq_dist;
     bvh.init(pts, edges, 1e-10);
     bvh.nearest_facet(Eigen::Vector3d(-1, -1, -1), nearest_point, sq_dist);
@@ -87,10 +87,10 @@ TEST_CASE("test_distance_2d", "[tests]")
     // clang-format on
 
     SimpleBVH::BVH bvh;
-    VectorMax3d nearest_point;
+    Vector2d nearest_point;
     double sq_dist;
     bvh.init(pts, edges, 1e-10);
-    bvh.nearest_facet(Eigen::Vector2d(-1, -1), nearest_point, sq_dist);
+    bvh.nearest_facet(Vector2d(-1, -1), nearest_point, sq_dist);
 
     CHECK(pts.row(0) == nearest_point.transpose());
 }
@@ -118,8 +118,8 @@ TEST_CASE("test_distance_3d", "[tests]")
         assert(s == 3);
     }
 
-    VectorMax3d min = vertices.colwise().minCoeff();
-    VectorMax3d max = vertices.colwise().maxCoeff();
+    Vector3d min = vertices.colwise().minCoeff();
+    Vector3d max = vertices.colwise().maxCoeff();
 
     MatrixXd pts = MatrixXd::Random(100, 3);
 
@@ -137,7 +137,7 @@ TEST_CASE("test_distance_3d", "[tests]")
 
     std::ofstream out("res.obj");
 
-    VectorMax3d nearest_point;
+    Vector3d nearest_point;
     double sq_dist;
     for (int i = 0; i < pts.rows(); ++i) {
         bvh.nearest_facet(pts.row(i), nearest_point, sq_dist);
